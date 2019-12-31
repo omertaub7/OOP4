@@ -4,11 +4,12 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.*;
 import java.util.*;
 
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
 import static java.lang.annotation.ElementType.TYPE;
 
-@Repeatable(value = OOPParent.class)
+@Repeatable(OOPParents.class)
 @Retention(RetentionPolicy.RUNTIME)
-@Target({TYPE})
+@Target({TYPE, CONSTRUCTOR})
 public @interface OOPParent {
     // TODO: Implement
 }
