@@ -44,53 +44,49 @@ public class OOPObject {
         }
         return directParents.stream().anyMatch(cls::isInstance);
     }
+    private static Object getDefiner(Object obj, String methodName, Class<?>... argTypes) {
+        if (obj.getClass() == Object.class) {
+            return obj;
+        }
+        try {
+            Method m = (obj.getClass().getDeclaredMethod(methodName, argTypes));
+            return obj;
+        } catch (NoSuchMethodException e) {
+            return getDefiner(obj.getClass(), methodName, argTypes);
+        }
+    }
 
     public Object definingObject(String methodName, Class<?> ...argTypes)
             throws OOP4AmbiguousMethodException, OOP4NoSuchMethodException {
-        LinkedList<Class<?>> defining = new LinkedList<Class<?>>();
-        List<Object> lst = directParents.stream().filter(obj -> obj.getClass().getMethods().toString().contains(methodName)).collect(Collectors.toList());
+        //List<Object> lst = directParents.stream().filter(obj -> Arrays.stream(obj.getClass().getMethods()).map(Method::getName).anyMatch(mth -> mth.equals(methodName))).collect(Collectors.toList());
         //Case 1 - only self declaring a method, and no one else in the tree
-        if (lst.size() == 0) {
-            try {
-                this.getClass().getDeclaredMethod(methodName, argTypes);
-                return this;
-            } catch (NoSuchMethodException e) {
-                throw new  OOP4NoSuchMethodException ();
+        //if (lst.size() == 0) {
+        try {
+            this.getClass().getDeclaredMethod(methodName, argTypes);
+            return this;
+        } catch (NoSuchMethodException ignored) {        }
+        //}
+        Set<Object> definers = new HashSet<Object>(); //TODO: check if can be done by array and not set
+        for (Object parent : directParents) {
+            if (!(parent instanceof OOPObject)) {
+                try {
+                    parent.getClass().getMethod(methodName, argTypes);
+                    Object o = getDefiner(parent, methodName, argTypes);
+                    definers.add(o);
+                } catch (NoSuchMethodException ignored) { }
+            } else {
+                try {
+                    Object o = (((OOPObject) parent).definingObject(methodName, argTypes));
+                    definers.add(o);
+                } catch ( OOP4NoSuchMethodException ignored) { }
             }
         }
-        Set<Object> implementors = new HashSet<Object>();
-        for (Object parent : lst ) {
-            while (parent != parent.getClass()) {
-                Class <?> c = parent.getClass().getSuperclass();
-                boolean flag = Arrays.stream(c.getMethods()).map(Method::getName).anyMatch(x -> x.equals(methodName));
-                if (!flag) {
-                    implementors.add(parent.getClass());
-                    break;
-                }
-                parent = parent.getClass();
-            }
-        }
-        if (implementors.size()>1) {
+        if (definers.size() == 0) {
+            throw new  OOP4NoSuchMethodException ();
+        } else if (definers.size()>1) {
             throw new OOP4AmbiguousMethodException ();
-        } else {
-            return implementors.toArray()[0];
         }
-
-        /*Object o = lst.get(0);
-        while (o != o.getClass()) {
-            try {
-                Method m = null;
-                m = o.getClass().getDeclaredMethod(methodName, argTypes);
-                if (null != m) {
-                    return o.getClass();
-                }
-            } catch (NoSuchMethodException e) {
-                o = o.getClass();
-                if (o == o.getClass()) {
-                    throw new OOP4NoSuchMethodException ();
-                }
-            }
-        }*/
+        return definers.toArray()[0];
     }
 
     public Object invoke(String methodName, Object... callArgs) throws
