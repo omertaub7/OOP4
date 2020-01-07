@@ -46,7 +46,9 @@ public class OOPObject {
 
     public Object definingObject(String methodName, Class<?> ...argTypes)
             throws OOP4AmbiguousMethodException, OOP4NoSuchMethodException {
-        // TODO: Implement
+        LinkedList<Class<?>> defining = new LinkedList<Class<?>>();
+        directParents.stream().
+
         return null;
     }
 
