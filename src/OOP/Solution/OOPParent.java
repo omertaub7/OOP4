@@ -9,7 +9,7 @@ import static java.lang.annotation.ElementType.TYPE;
 
 @Repeatable(OOPParents.class)
 @Retention(RetentionPolicy.RUNTIME)
-@Target({TYPE, CONSTRUCTOR})
+@Target(TYPE)
 public @interface OOPParent {
     Class<?> parent ();
     boolean isVirtual () default false;

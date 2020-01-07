@@ -8,6 +8,7 @@ import OOP.Provided.OOP4ObjectInstantiationFailedException;
 import java.io.ObjectStreamException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,14 +48,53 @@ public class OOPObject {
     public Object definingObject(String methodName, Class<?> ...argTypes)
             throws OOP4AmbiguousMethodException, OOP4NoSuchMethodException {
         LinkedList<Class<?>> defining = new LinkedList<Class<?>>();
-        directParents.stream().
+        List<Object> lst = directParents.stream().filter(obj -> obj.getClass().getMethods().toString().contains(methodName)).collect(Collectors.toList());
+        //Case 1 - only self declaring a method, and no one else in the tree
+        if (lst.size() == 0) {
+            try {
+                this.getClass().getDeclaredMethod(methodName, argTypes);
+                return this;
+            } catch (NoSuchMethodException e) {
+                throw new  OOP4NoSuchMethodException ();
+            }
+        }
+        Set<Object> implementors = new HashSet<Object>();
+        for (Object parent : lst ) {
+            while (parent != parent.getClass()) {
+                Class <?> c = parent.getClass().getSuperclass();
+                boolean flag = Arrays.stream(c.getMethods()).map(Method::getName).anyMatch(x -> x.equals(methodName));
+                if (!flag) {
+                    implementors.add(parent.getClass());
+                    break;
+                }
+                parent = parent.getClass();
+            }
+        }
+        if (implementors.size()>1) {
+            throw new OOP4AmbiguousMethodException ();
+        } else {
+            return implementors.toArray()[0];
+        }
 
-        return null;
+        /*Object o = lst.get(0);
+        while (o != o.getClass()) {
+            try {
+                Method m = null;
+                m = o.getClass().getDeclaredMethod(methodName, argTypes);
+                if (null != m) {
+                    return o.getClass();
+                }
+            } catch (NoSuchMethodException e) {
+                o = o.getClass();
+                if (o == o.getClass()) {
+                    throw new OOP4NoSuchMethodException ();
+                }
+            }
+        }*/
     }
 
     public Object invoke(String methodName, Object... callArgs) throws
             OOP4AmbiguousMethodException, OOP4NoSuchMethodException, OOP4MethodInvocationFailedException {
-        // TODO: Implement
         return null;
     }
 }
