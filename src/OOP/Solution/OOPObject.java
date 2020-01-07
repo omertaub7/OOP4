@@ -9,6 +9,7 @@ import java.io.ObjectStreamException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,13 +45,17 @@ public class OOPObject {
         }
         return directParents.stream().anyMatch(cls::isInstance);
     }
-    private static Object getDefiner(Object obj, String methodName, Class<?>... argTypes) {
+    private static Object getDefiner(Object obj, String methodName, Class<?>... argTypes) throws  NoSuchMethodException {
         if (obj.getClass() == Object.class) {
-            return obj;
+            return obj.getClass().getDeclaredMethod(methodName, argTypes);
         }
         try {
             Method m = (obj.getClass().getDeclaredMethod(methodName, argTypes));
-            return obj;
+            if (!Modifier.isPrivate(m.getModifiers())) {
+                return obj;
+            } else {
+                return getDefiner(obj.getClass(), methodName, argTypes);
+            }
         } catch (NoSuchMethodException e) {
             return getDefiner(obj.getClass(), methodName, argTypes);
         }
@@ -58,14 +63,12 @@ public class OOPObject {
 
     public Object definingObject(String methodName, Class<?> ...argTypes)
             throws OOP4AmbiguousMethodException, OOP4NoSuchMethodException {
-        //List<Object> lst = directParents.stream().filter(obj -> Arrays.stream(obj.getClass().getMethods()).map(Method::getName).anyMatch(mth -> mth.equals(methodName))).collect(Collectors.toList());
-        //Case 1 - only self declaring a method, and no one else in the tree
-        //if (lst.size() == 0) {
         try {
-            this.getClass().getDeclaredMethod(methodName, argTypes);
-            return this;
+            Method m = this.getClass().getDeclaredMethod(methodName, argTypes);
+            if (!Modifier.isPrivate(m.getModifiers())) {
+                return this;
+            }
         } catch (NoSuchMethodException ignored) {        }
-        //}
         Set<Object> definers = new HashSet<Object>(); //TODO: check if can be done by array and not set
         for (Object parent : directParents) {
             if (!(parent instanceof OOPObject)) {
