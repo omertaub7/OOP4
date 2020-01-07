@@ -5,9 +5,27 @@ import OOP.Provided.OOP4MethodInvocationFailedException;
 import OOP.Provided.OOP4NoSuchMethodException;
 import OOP.Provided.OOP4ObjectInstantiationFailedException;
 
+import java.lang.reflect.Constructor;
+import java.util.*;
+import java.util.stream.Collectors;
+
 public class OOPObject {
+    List<Object> directParents;
+    Map<String, Class<?>> virtualAncestor;
+
     public OOPObject() throws OOP4ObjectInstantiationFailedException {
-        // TODO: Implement
+        directParents = new LinkedList<Class<?>>();
+        virtualAncestor = new HashMap<String, Class<?>>();
+        OOPParent[] lst = this.getClass().getAnnotationsByType(OOPParent.class);
+        List<Class<?>> classes = Arrays.stream(lst).map(OOPParent::parent).collect(Collectors.toList());
+        //TODO: Take care of virtual Ancestors
+        for (Class<?> c : classes) {
+
+
+
+            }
+        }
+
     }
 
     public boolean multInheritsFrom(Class<?> cls) {

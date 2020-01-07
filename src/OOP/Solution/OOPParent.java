@@ -11,5 +11,6 @@ import static java.lang.annotation.ElementType.TYPE;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({TYPE, CONSTRUCTOR})
 public @interface OOPParent {
-    // TODO: Implement
+    Class<?> parent ();
+    boolean isVirtual = false;
 }
