@@ -12,5 +12,5 @@ import static java.lang.annotation.ElementType.TYPE;
 @Target({TYPE, CONSTRUCTOR})
 public @interface OOPParent {
     Class<?> parent ();
-    boolean isVirtual = false;
+    boolean isVirtual () default false;
 }
