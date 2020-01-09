@@ -36,6 +36,9 @@ public class OOPObject {
     }
 
     public boolean multInheritsFrom(Class<?> cls) {
+        if (cls == OOPObject.class) {
+            return false;
+        }
         if (this.getClass() == cls) {
             return true;
         }
@@ -44,21 +47,6 @@ public class OOPObject {
             return true;
         }
         return directParents.stream().anyMatch(cls::isInstance);
-    }
-    private static Object getDefiner(Object obj, String methodName, Class<?>... argTypes) throws  NoSuchMethodException {
-        if (obj.getClass() == Object.class) {
-            return obj.getClass().getDeclaredMethod(methodName, argTypes);
-        }
-        try {
-            Method m = (obj.getClass().getDeclaredMethod(methodName, argTypes));
-            if (!Modifier.isPrivate(m.getModifiers())) {
-                return obj;
-            } else {
-                return getDefiner(obj.getClass(), methodName, argTypes);
-            }
-        } catch (NoSuchMethodException e) {
-            return getDefiner(obj.getClass(), methodName, argTypes);
-        }
     }
 
     public Object definingObject(String methodName, Class<?> ...argTypes)
@@ -74,8 +62,7 @@ public class OOPObject {
             if (!(parent instanceof OOPObject)) {
                 try {
                     parent.getClass().getMethod(methodName, argTypes);
-                    Object o = getDefiner(parent, methodName, argTypes);
-                    definers.add(o);
+                    definers.add(parent);
                 } catch (NoSuchMethodException ignored) { }
             } else {
                 try {
@@ -94,6 +81,15 @@ public class OOPObject {
 
     public Object invoke(String methodName, Object... callArgs) throws
             OOP4AmbiguousMethodException, OOP4NoSuchMethodException, OOP4MethodInvocationFailedException {
-        return null;
+        List<Class<?>> argTypes = Arrays.stream(callArgs).map(Object::getClass).collect(Collectors.toCollection(LinkedList::new));
+        try {
+            Object definer = definingObject(methodName, argTypes.toArray(new Class[argTypes.size()]));
+            Method m = definer.getClass().getMethod(methodName, argTypes.toArray(new Class[argTypes.size()]));
+            return m.invoke(definer, callArgs);
+        } catch (NoSuchMethodException e) {
+            throw new OOP4NoSuchMethodException ();
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw  new OOP4MethodInvocationFailedException ();
+        } //Rest of the OOP4 Exceptions are thrown anyway from this function
     }
 }
