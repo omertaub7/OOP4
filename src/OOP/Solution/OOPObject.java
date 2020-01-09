@@ -14,8 +14,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class OOPObject {
-    List<Object> directParents;
-    Map<String, Class<?>> virtualAncestor;
+    private List<Object> directParents;
+    private Map<String, Class<?>> virtualAncestor;
 
     public OOPObject() throws OOP4ObjectInstantiationFailedException {
         directParents = new LinkedList<Object>();
