@@ -13,25 +13,79 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class OOPObject {
+    //Mandatory fields
     private List<Object> directParents;
     private Map<String, Object> virtualAncestor;
+    //Static fields for virtual ancestors and stuff
+    private static Map<String, Object> virtual_objects;
+    private static Class<?> most_derived_class = null;
+
+    static private void dfs_construct (Class<?> c, List<Class<?>> virtualBaseClasses) {
+        //DFS Rules!!
+        for (OOPParent anot : c.getAnnotationsByType(OOPParent.class)) {
+            dfs_construct(anot.parent(), virtualBaseClasses);
+            if (anot.isVirtual() && !virtualBaseClasses.contains(c)){
+                virtualBaseClasses.add(anot.parent());
+            }
+        }
+    }
 
     public OOPObject() throws OOP4ObjectInstantiationFailedException {
         directParents = new LinkedList<Object>();
         virtualAncestor = new HashMap<String, Object>();
+
+        if (null == most_derived_class) {
+            virtual_objects = new HashMap<String, Object>();
+            most_derived_class = this.getClass();
+        }
+        //Take care of virtual base classes
+        LinkedList<Class<?>> virtuals = new LinkedList<Class<?>>();
         OOPParent[] lst = this.getClass().getAnnotationsByType(OOPParent.class);
-        // List<Class<?>> classes = Arrays.stream(lst).map(OOPParent::parent).collect(Collectors.toList());
-        //TODO: Take care of virtual Ancestors
-//        for (Class<?> c : classes) {
-        for (OOPParent c : lst) {
-            try {
-                Constructor<?> construct = c.parent().getConstructor();
-                Object [] initArgs = new Object[0];
-                Object o =  construct.newInstance(initArgs);
-                directParents.add(o);
-            } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                throw new OOP4ObjectInstantiationFailedException();
+        dfs_construct(this.getClass(), virtuals);
+
+        try {
+            //Phase 1 - create new instances of new virtual ancestors if they are not in the virtualObjects map yet
+            List <Class<?>> toConstruct = virtuals.stream().filter(virt -> !virtual_objects.containsKey(virt.getName())).collect(Collectors.toCollection(LinkedList::new));
+
+            for (Class<?> c : toConstruct) {
+                if (virtual_objects.containsKey(c.getName())) {
+                    continue;
+                }
+                Constructor<?> m = c.getDeclaredConstructor();
+                if (Modifier.isPrivate(m.getModifiers())) {
+                    throw new OOP4ObjectInstantiationFailedException ();
+                } else {
+                    m.setAccessible(true);
+                }
+                Object inst = m.newInstance();
+                virtual_objects.put(c.getName(), inst);
             }
+            //Phase 2 - update virtual ancestor list according to virtual objects map
+            virtual_objects.values().stream().map(obj -> virtualAncestor.put(obj.getClass().getName(), obj));
+            //Phase 3 - go on all annotations as usual and add to direct parents
+            for (OOPParent anot : lst) {
+                if (anot.isVirtual()) {
+                    directParents.add(virtual_objects.get(anot.parent().getName()));
+                } else {
+                    Constructor<?> m = anot.parent().getDeclaredConstructor();
+                    if (!Modifier.isPrivate(m.getModifiers())) {
+                        m.setAccessible(true);
+                    } else {
+                        throw new OOP4ObjectInstantiationFailedException ();
+                    }
+                    Object inst = m.newInstance();
+                    directParents.add(inst);
+                }
+            }
+            //Phase 4 - undo the most derived if this is the same class
+            if (this.getClass() == most_derived_class) {
+                most_derived_class = null;
+            }
+        }
+        catch (OOP4ObjectInstantiationFailedException | InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+            //Dont forget to delete most derived as construction failed
+            most_derived_class = null;
+            throw new OOP4ObjectInstantiationFailedException();
         }
     }
 
