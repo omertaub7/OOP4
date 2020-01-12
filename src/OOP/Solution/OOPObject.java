@@ -5,7 +5,6 @@ import OOP.Provided.OOP4MethodInvocationFailedException;
 import OOP.Provided.OOP4NoSuchMethodException;
 import OOP.Provided.OOP4ObjectInstantiationFailedException;
 
-import java.io.ObjectStreamException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,17 +14,18 @@ import java.util.stream.Collectors;
 
 public class OOPObject {
     private List<Object> directParents;
-    private Map<String, Class<?>> virtualAncestor;
+    private Map<String, Object> virtualAncestor;
 
     public OOPObject() throws OOP4ObjectInstantiationFailedException {
         directParents = new LinkedList<Object>();
-        virtualAncestor = new HashMap<String, Class<?>>();
+        virtualAncestor = new HashMap<String, Object>();
         OOPParent[] lst = this.getClass().getAnnotationsByType(OOPParent.class);
-        List<Class<?>> classes = Arrays.stream(lst).map(OOPParent::parent).collect(Collectors.toList());
+        // List<Class<?>> classes = Arrays.stream(lst).map(OOPParent::parent).collect(Collectors.toList());
         //TODO: Take care of virtual Ancestors
-        for (Class<?> c : classes) {
+//        for (Class<?> c : classes) {
+        for (OOPParent c : lst) {
             try {
-                Constructor<?> construct = c.getConstructor();
+                Constructor<?> construct = c.parent().getConstructor();
                 Object [] initArgs = new Object[0];
                 Object o =  construct.newInstance(initArgs);
                 directParents.add(o);
